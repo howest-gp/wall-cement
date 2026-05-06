@@ -1,0 +1,32 @@
+[
+  {
+    "instanceId": "wall-01",
+    "targetUrl": "file:///opt/wallpoll/screensaver.html",
+    "enableSsh": true
+  },
+  {
+    "instanceId": "wall-02",
+    "targetUrl": "file:///opt/wallpoll/screensaver.html",
+    "enableSsh": true
+  },
+  {
+    "instanceId": "wall-03",
+    "targetUrl": "file:///opt/wallpoll/screensaver.html",
+    "enableSsh": true
+  },
+  {
+    "instanceId": "wall-04",
+    "targetUrl": "file:///opt/wallpoll/screensaver.html",
+    "enableSsh": true
+  },
+  {
+    "instanceId": "wall-05",
+    "targetUrl": "file:///opt/wallpoll/screensaver.html",
+    "enableSsh": true
+  },
+  {
+    "instanceId": "wall-06",
+    "targetUrl": "file:///opt/wallpoll/screensaver.html",
+    "enableSsh": true
+  }
+]
