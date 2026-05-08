@@ -1,12 +1,12 @@
 [
   {
     "instanceId": "wall-01",
-    "targetUrl": "file:///opt/wallpoll/screensaver.html",
+    "targetUrl": "file:///home/wally/wallcement/slideshow.html",
     "enableSsh": true
   },
   {
     "instanceId": "wall-02",
-    "targetUrl": "file:///opt/wallpoll/screensaver.html",
+    "targetUrl": "https://cit-video-wall.lovable.app/screen/prog-2",
     "enableSsh": true
   },
   {
