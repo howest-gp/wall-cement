@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automatic Fullscreen Slideshow</title>
+    <style>
+        /* Reset margins and ensure the page takes up the full screen */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #000; /* Black background for any empty space */
+            overflow: hidden; /* Hide scrollbars */
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Container that holds all the slides */
+        #slideshow-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Each individual slide */
+        .slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0; /* Hidden by default */
+            transition: opacity 1.5s ease-in-out; /* Smooth crossfade effect */
+            z-index: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Prevent scaled images from bleeding out */
+        }
+
+        /* The active slide that is currently visible */
+        .slide.active {
+            opacity: 1;
+            z-index: 2;
+        }
+
+        /* Hardware-accelerated image tags replace background-images */
+        .slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; /* Default fit without cropping */
+        }
+
+        /* Class to swap from 'contain' to 'cover' when fill-pan is enabled */
+        .slide.fill-pan img {
+            object-fit: cover;
+        }
+
+        /* We scale the image up by 10% (1.1) to give us a 4% margin on all sides to physically pan across */
+        @keyframes panLeftToRight {
+            0% { transform: scale(1.1) translateX(-4%); }
+            100% { transform: scale(1.1) translateX(4%); }
+        }
+        @keyframes panRightToLeft {
+            0% { transform: scale(1.1) translateX(4%); }
+            100% { transform: scale(1.1) translateX(-4%); }
+        }
+        @keyframes panTopToBottom {
+            0% { transform: scale(1.1) translateY(-4%); }
+            100% { transform: scale(1.1) translateY(4%); }
+        }
+        @keyframes panBottomToTop {
+            0% { transform: scale(1.1) translateY(4%); }
+            100% { transform: scale(1.1) translateY(-4%); }
+        }
+
+        /* Loading and error text styling */
+        #loader {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 1.2rem;
+            z-index: 10;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 10px 20px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div id="slideshow-container">
+        <!-- A simple loading message -->
+        <div id="loader">Loading slideshow...</div>
+    </div>
+
+    <!-- Load external settings as a JS file to bypass local file:// security restrictions -->
+    <script src="settings.js"></script>
+
+    <script>
+        /**
+         * ============================================================================
+         * CONFIGURATION SECTION
+         * ============================================================================
+         */
+        
+        // Default settings (used as a fallback if settings.js cannot be loaded)
+        let config = {
+            IMAGE_FOLDER: 'images', // Trailing slash will be handled automatically
+            TOTAL_IMAGES: 5,
+            PRIMARY_EXTENSION: '.jpg',
+            SECONDARY_EXTENSION: '.png',
+            SLIDE_DURATION: 5000,
+            FALLBACK_IMAGE: 'fallback.jpg',
+            FILL_PAN_MODE: true, // Toggle for Fills & Pans mode
+            RANDOMIZE_ORDER: true // Toggle to shuffle image playback
+        };
+
+        /**
+         * ============================================================================
+         * SLIDESHOW LOGIC
+         * ============================================================================
+         */
+
+        const container = document.getElementById('slideshow-container');
+        const loader = document.getElementById('loader');
+        const slides = [];
+        let slideOrder = [];
+        let orderIndex = 0;
+
+        // Helper function to shuffle an array (Fisher-Yates algorithm)
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // Function to initialize the slideshow
+        function initSlideshow() {
+            // Show loader while setting up
+            loader.style.display = 'block';
+
+            // Merge external config over the default config if settings.js was loaded successfully
+            if (typeof externalSettings !== 'undefined') {
+                config = { ...config, ...externalSettings };
+            } else {
+                console.log("settings.js not found or loaded. Using default settings inside HTML.");
+            }
+
+            if (config.TOTAL_IMAGES <= 0) {
+                console.error("TOTAL_IMAGES must be greater than zero.");
+                loader.innerText = "Configuration Error: TOTAL_IMAGES must be > 0";
+                return;
+            }
+
+            // Clean up the folder path to remove any accidental trailing slashes
+            const safeFolder = config.IMAGE_FOLDER.replace(/\/+$/, '');
+
+            // Create DOM elements for each numbered image
+            for (let i = 1; i <= config.TOTAL_IMAGES; i++) {
+                const slideDiv = document.createElement('div');
+                slideDiv.className = 'slide';
+                
+                // If fill-pan mode is active, add the CSS class
+                if (config.FILL_PAN_MODE) {
+                    slideDiv.classList.add('fill-pan');
+                }
+                
+                // Create the hardware-accelerated image element inside the slide
+                const imgEl = document.createElement('img');
+                slideDiv.appendChild(imgEl);
+                
+                // Construct the primary and secondary image paths
+                const primaryPath = `${safeFolder}/${i}${config.PRIMARY_EXTENSION}`;
+                const secondaryPath = `${safeFolder}/${i}${config.SECONDARY_EXTENSION}`;
+                
+                const setupPromise = new Promise((resolve) => {
+                    const primaryCheck = new Image();
+                    primaryCheck.onload = () => {
+                        imgEl.src = primaryPath;
+                        slideDiv.dataset.natWidth = primaryCheck.naturalWidth;
+                        slideDiv.dataset.natHeight = primaryCheck.naturalHeight;
+                        resolve();
+                    };
+                    primaryCheck.onerror = () => {
+                        // 1st failure: Primary image not found. Try secondary image.
+                        const secondaryCheck = new Image();
+                        secondaryCheck.onload = () => {
+                            imgEl.src = secondaryPath;
+                            slideDiv.dataset.natWidth = secondaryCheck.naturalWidth;
+                            slideDiv.dataset.natHeight = secondaryCheck.naturalHeight;
+                            resolve();
+                        };
+                        secondaryCheck.onerror = () => {
+                            // 2nd failure: Secondary image also not found. Set to fallback.
+                            const fallbackCheck = new Image();
+                            fallbackCheck.onload = () => {
+                                imgEl.src = config.FALLBACK_IMAGE;
+                                slideDiv.dataset.natWidth = fallbackCheck.naturalWidth;
+                                slideDiv.dataset.natHeight = fallbackCheck.naturalHeight;
+                                resolve();
+                            };
+                            fallbackCheck.onerror = () => {
+                                // 3rd failure: Fallback image not found. Display error.
+                                imgEl.src = `https://placehold.co/1920x1080/333/fff?text=Error:+Missing+Image+${i}+%26+Fallback`;
+                                slideDiv.dataset.natWidth = 1920;
+                                slideDiv.dataset.natHeight = 1080;
+                                resolve();
+                            };
+                            fallbackCheck.src = config.FALLBACK_IMAGE;
+                        };
+                        secondaryCheck.src = secondaryPath;
+                    };
+                    primaryCheck.src = primaryPath;
+                });
+
+                // Add the slide to the container and our tracking array
+                container.appendChild(slideDiv);
+                slides.push(slideDiv);
+
+                // Only begin the slideshow once the first image has securely provided its native dimensions
+                if (i === 1) {
+                    setupPromise.then(() => {
+                        loader.style.display = 'none';
+                        if (slides.length > 0) {
+                            // Create an array of indices [0, 1, 2, ... N]
+                            slideOrder = Array.from({length: slides.length}, (_, index) => index);
+                            
+                            // Shuffle the sequence if configured
+                            if (config.RANDOMIZE_ORDER) {
+                                shuffleArray(slideOrder);
+                            }
+
+                            const firstSlideId = slideOrder[0];
+                            applyPanAnimation(slides[firstSlideId]);
+                            slides[firstSlideId].classList.add('active');
+                            setInterval(nextSlide, config.SLIDE_DURATION);
+                        }
+                    });
+                }
+            }
+        }
+
+        // Helper function to trigger the panning animation dynamically
+        function applyPanAnimation(slide) {
+            if (!config.FILL_PAN_MODE) return;
+            
+            const img = slide.querySelector('img');
+            const natW = parseFloat(slide.dataset.natWidth) || 1920;
+            const natH = parseFloat(slide.dataset.natHeight) || 1080;
+            const screenRatio = window.innerWidth / window.innerHeight;
+            const imgRatio = natW / natH;
+
+            let direction;
+
+            // If the image's aspect ratio is wider than the screen's, it overflows left/right.
+            if (imgRatio > screenRatio) {
+                direction = Math.random() > 0.5 ? 'panLeftToRight' : 'panRightToLeft';
+            } 
+            // If the image is taller than the screen, it overflows top/bottom.
+            else {
+                direction = Math.random() > 0.5 ? 'panTopToBottom' : 'panBottomToTop';
+            }
+            
+            // Pan duration = Slide Duration + 1500ms (the CSS crossfade time) 
+            const duration = config.SLIDE_DURATION + 1500; 
+
+            // Trick to force the browser to restart the CSS animation on the image tag
+            img.style.animation = 'none';
+            void img.offsetWidth; // Trigger DOM reflow
+            
+            img.style.animation = `${direction} ${duration}ms linear forwards`;
+        }
+
+        // Function to transition to the next slide
+        function nextSlide() {
+            // Remove active class from the current slide
+            const currentSlideId = slideOrder[orderIndex];
+            const outgoingSlide = slides[currentSlideId];
+            outgoingSlide.classList.remove('active');
+            
+            // Stop the heavy panning animation on the outgoing slide after it finishes fading out
+            // This prevents the GPU from calculating pan movements for invisible images
+            setTimeout(() => {
+                if (!outgoingSlide.classList.contains('active')) {
+                    const img = outgoingSlide.querySelector('img');
+                    if (img) img.style.animation = 'none';
+                }
+            }, 1500); // 1500ms matches the CSS opacity transition duration
+            
+            // Move to the next sequence index
+            orderIndex++;
+            
+            // If we reached the end of the sequence, loop back and reshuffle
+            if (orderIndex >= slideOrder.length) {
+                orderIndex = 0;
+                
+                if (config.RANDOMIZE_ORDER) {
+                    shuffleArray(slideOrder);
+                    
+                    // Ensure the first image of the new loop isn't the exact same as the last image of the previous loop
+                    if (slideOrder[0] === currentSlideId && slideOrder.length > 1) {
+                        // Swap it with the second image in the shuffled array
+                        [slideOrder[0], slideOrder[1]] = [slideOrder[1], slideOrder[0]];
+                    }
+                }
+            }
+
+            const nextSlideId = slideOrder[orderIndex];
+
+            // Apply the random panning animation right before the slide fades in
+            applyPanAnimation(slides[nextSlideId]);
+
+            // Add active class to the new slide
+            slides[nextSlideId].classList.add('active');
+        }
+
+        // Run the initialization once the page has fully loaded
+        window.onload = initSlideshow;
+    </script>
+</body>
+</html>
