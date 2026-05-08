@@ -1,7 +1,7 @@
 [
   {
     "instanceId": "wall-01",
-    "targetUrl": "file:///home/wally/wallcement/slideshow.html",
+    "targetUrl": "file:///opt/wallpoll/screensaver.html",
     "enableSsh": true
   },
   {
