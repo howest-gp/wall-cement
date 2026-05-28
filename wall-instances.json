@@ -1,7 +1,7 @@
 [
   {
     "instanceId": "wall-01",
-    "targetUrl": "https://raw.githubusercontent.com/howest-gp/wall-cement/refs/heads/master/ti-logo-3840x3240-dark.png",
+    "targetUrl": "file:///opt/wallpoll/screensaver.html",
     "enableSsh": true
   },
   {
