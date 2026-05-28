@@ -1,7 +1,7 @@
 [
   {
     "instanceId": "wall-01",
-    "targetUrl": "https://github.com/howest-gp/wall-cement/blob/master/ti-logo-1920x3240-dark.png", //"file:///home/wally/wallpoll/screensaver.html",
+    "targetUrl": "file:///opt/wallpoll/screensaver.html",
     "enableSsh": true
   },
   {
@@ -21,12 +21,12 @@
   },
   {
     "instanceId": "wall-05",
-    "targetUrl": "file:///opt/wallpoll/screensaver.html",
+    "targetUrl": "https://raw.githubusercontent.com/howest-gp/wall-cement/refs/heads/master/ti-logo-1920x3240-dark.png",
     "enableSsh": true
   },
   {
     "instanceId": "wall-06",
-    "targetUrl": "file:///opt/wallpoll/screensaver.html",
+    "targetUrl": "https://raw.githubusercontent.com/howest-gp/wall-cement/refs/heads/master/ti-logo-3840x3240-dark.png",
     "enableSsh": true
   }
 ]
