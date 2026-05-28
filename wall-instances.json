@@ -11,7 +11,7 @@
   },
   {
     "instanceId": "wall-03",
-    "targetUrl": "file:///opt/wallpoll/screensaver.html",
+    "targetUrl": "https://vleugels-screens-control-panel.vercel.app/screen/3",
     "enableSsh": true
   },
   {
