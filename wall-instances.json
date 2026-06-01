@@ -21,7 +21,7 @@
   },
   {
     "instanceId": "wall-05",
-    "targetUrl": "https://raw.githubusercontent.com/howest-gp/wall-cement/refs/heads/master/ti-logo-1920x3240-dark.png",
+    "targetUrl": "https://vleugels-screens-control-panel.vercel.app/screen/5",
     "enableSsh": true
   },
   {
