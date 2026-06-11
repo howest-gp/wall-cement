@@ -21,7 +21,7 @@
   },
   {
     "instanceId": "wall-05",
-    "targetUrl": "https://vleugels.cyber3lab.be/5",
+    "targetUrl": "https://vleugels.cyber3lab.be/screen/5",
     "enableSsh": true
   },
   {
