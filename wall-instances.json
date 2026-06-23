@@ -6,7 +6,7 @@
   },
   {
     "instanceId": "wall-02",
-    "targetUrl": "https://vleugels.cyber3lab.be/screen/2",
+    "targetUrl": "https://raw.githubusercontent.com/howest-gp/wall-cement/refs/heads/master/ti-logo-3840x3240-dark.png",
     "enableSsh": true
   },
   {
